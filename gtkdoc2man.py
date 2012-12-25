@@ -45,6 +45,9 @@ def _sanitizeRefTo(name):
     return name.strip().replace(' ', '_')
 
 def _sanitizeId(name):
+    # Work around Gio doing Blah_struct junk.
+    if '_struct.' in name:
+        name = name.replace('_struct.', '.')
     return name.split(':')[0].replace('-', '_').replace(' ', '_')
 
 def _link(name, refto, output_directory=None, prefix=None, section=3):
@@ -53,7 +56,7 @@ def _link(name, refto, output_directory=None, prefix=None, section=3):
     print '%s => %s (%s)' % (name, refto, section)
     path = os.path.join(output_directory, name + ('.%d' % section))
     f = file(path, 'w')
-    f.write('.so man%d/%s.%d\n' % (section, refto, section))
+    f.write('.so man%d/%s\n' % (section, refto))
     f.close()
 
 def _rmtmpdir(tmpdir):
@@ -70,6 +73,7 @@ def gtkdoc2man(path, output_directory=None, prefix=None, section=3):
         prefix = ''
 
     tmpdir = tempfile.mkdtemp(dir=output_directory)
+    refto = None
 
     try:
         # Generate the man page for the gtkdoc section.
@@ -80,18 +84,23 @@ def gtkdoc2man(path, output_directory=None, prefix=None, section=3):
         # Move the file to it's prefixed name.
         for f in os.listdir(tmpdir):
             src = os.path.join(tmpdir, f)
+            # Work around Gio doing Blah_struct.3 junk.
+            if '_struct.' in f:
+                f = f.replace('_struct.', '.')
             dst = os.path.join(output_directory, '%s:%s' % (prefix, f))
             os.rename(src, dst)
+            refto = f
     finally:
         _rmtmpdir(tmpdir)
 
+    if not refto:
+        print >> sys.stderr, 'Nothing processed in', path
+        return
+
     # Generate the links to the generated manpage.
     tree = parse(path, parser=HTMLParser())
-    refto = None
     for child in tree.iter():
-        if child.tag == 'refname':
-            refto = _sanitizeRefTo(child.text)
-        elif child.tag == 'refsect2':
+        if child.tag == 'refsect2':
             if 'id' in child.attrib and 'role' in child.attrib:
                 role = child.attrib['role']
                 if role in ('function', 'struct', 'macro', 'typedef'):
