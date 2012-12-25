@@ -38,4 +38,4 @@ g_ptr_array_sort_with_data (3) - arrays of pointers to any type of data, which g
 g_ptr_array_unref (3) - arrays of pointers to any type of data, which grow automatically as new elements are added
 ```
 
-Also, <Shift>K should work in VIM to see the documentation on the type, macro, or function.
+Also, Shift+K should work in VIM to see the documentation on the type, macro, or function.
