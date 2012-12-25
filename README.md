@@ -8,9 +8,7 @@ Then the .xml files were processed for refentry2 links to build the function, ma
 To install.
 
 ```sh
-cd /usr/share/man/man3
-tar xzf /path/to/glib2-manpages.tar.gz
-sudo mandb
+sudo ./install.sh
 ```
 
 Now you will be able to search for for things like:
