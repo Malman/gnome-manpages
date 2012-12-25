@@ -45,9 +45,9 @@ def _sanitizeRefTo(name):
     return name.strip().replace(' ', '_')
 
 def _sanitizeId(name):
-    # Work around Gio doing Blah_struct junk.
-    if '_struct.' in name:
-        name = name.replace('_struct.', '.')
+    # Work around Gio doing "Blah struct" junk.
+    if '-struct' in name:
+        name = name.replace('-struct', '')
     return name.split(':')[0].replace('-', '_').replace(' ', '_')
 
 def _link(name, refto, output_directory=None, prefix=None, section=3):
