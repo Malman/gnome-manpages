@@ -120,7 +120,9 @@ def gtkdoc2man(path, output_directory=None, prefix=None, section=3, book=None):
     tree = parse(data)
     tree.xinclude()
     for child in tree.iter():
-        if child.tag == 'refsect2':
+        if child.tag == 'refname':
+            refto = _sanitizeId(child.text) + '.3'
+        elif child.tag == 'refsect2':
             if 'id' in child.attrib and 'role' in child.attrib:
                 role = child.attrib['role']
                 if role in ('function', 'struct', 'macro', 'typedef'):
