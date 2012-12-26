@@ -36,6 +36,7 @@ VIM and Emacs.
 import getopt
 import os
 from pipes import quote
+from StringIO import StringIO
 import sys
 import tempfile
 
@@ -64,8 +65,8 @@ def _rmtmpdir(tmpdir):
         os.unlink(os.path.join(tmpdir, f))
     os.rmdir(tmpdir)
 
-def gtkdoc2man(path, output_directory=None, prefix=None, section=3):
-    from lxml.etree import parse, HTMLParser
+def gtkdoc2man(path, output_directory=None, prefix=None, section=3, book=None):
+    from lxml.etree import parse
 
     if output_directory is None:
         output_directory = os.getcwd()
@@ -77,7 +78,15 @@ def gtkdoc2man(path, output_directory=None, prefix=None, section=3):
 
     try:
         # Generate the man page for the gtkdoc section.
-        procargs = ['xsltproc', '-o', tmpdir + '/', '-nonet', XSL_URL, path]
+        procargs = ['xsltproc',
+                    '-o', tmpdir + '/',
+                    '--xinclude',
+                    '--stringparam', 'gtkdoc.bookname', "BLAHBLAH",
+                    '--stringparam', 'chunk.quietly', '1',
+                    '--stringparam', 'chunker.output.quiet', '1',
+                    '-nonet',
+                    XSL_URL,
+                    path]
         command = ' '.join([quote(a) for a in procargs])
         os.system(command)
 
@@ -97,8 +106,19 @@ def gtkdoc2man(path, output_directory=None, prefix=None, section=3):
         print >> sys.stderr, 'Nothing processed in', path
         return
 
+    # Load in the documentation file.
+    data = file(path).read()
+
+    # Inject xmlns:xi="" so that the XML parser can follow xinclude
+    # paths. Pretty annoying that this isn't done by default.
+    idx = data.index('<book')
+    assert idx, 'Cannot find <book> in XML document.'
+    data = data[:idx + 5] + ' xmlns:xi="http://www.w3.org/2001/XInclude" ' + data[idx+5:]
+    data = StringIO(data)
+
     # Generate the links to the generated manpage.
-    tree = parse(path, parser=HTMLParser())
+    tree = parse(data)
+    tree.xinclude()
     for child in tree.iter():
         if child.tag == 'refsect2':
             if 'id' in child.attrib and 'role' in child.attrib:
@@ -120,11 +140,12 @@ Options
     -s --section=3                 The manual section [Default is 3]
     -o --output-directory=DIR      Set the output directory.
     -p --prefix=PREFIX             Prefix output filenames.
+    -b --book=NAME                 The book name.
 """ % sys.argv[0]
 
 if __name__ == '__main__':
-    longArgs = ['output-directory=', 'prefix=', 'help', 'check', 'section=']
-    shortArgs = 'o:p:hcs:'
+    longArgs = ['output-directory=', 'prefix=', 'help', 'check', 'section=', 'book=']
+    shortArgs = 'o:p:hcs:b:'
     argv = sys.argv[1:]
 
     try:
@@ -137,6 +158,7 @@ if __name__ == '__main__':
     outdir = None
     prefix = None
     section = 3
+    book = None
 
     for o,a in opts:
         if o in ('-h', '--help'):
@@ -159,12 +181,15 @@ if __name__ == '__main__':
             section = int(a)
             assert section >= 0
             assert section < 10
+        elif o in ('-b', '--book'):
+            book = a
 
     for path in args:
         if os.path.exists(path):
             gtkdoc2man(path,
                        output_directory=outdir,
                        prefix=prefix,
-                       section=section)
+                       section=section,
+                       book=book)
 
     sys.exit(0)

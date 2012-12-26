@@ -37,3 +37,16 @@ g_ptr_array_unref (3) - arrays of pointers to any type of data, which grow autom
 ```
 
 Also, Shift+K should work in VIM to see the documentation on the type, macro, or function.
+
+# Building manpages for your project
+
+Make sure you configure your project with --enable-gtk-doc to generate your
+reference documentation. Then run the gtkdoc2man.py script provided in this
+repository.
+
+```sh
+cd doc/reference/my
+/path/to/gtkdoc2man.py -o man/ --prefix=My '--book=My Reference' --section=3 my-docs.sgml
+```
+
+In the example above, the man pages will be placed in the directory man/.
