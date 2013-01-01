@@ -111,9 +111,10 @@ def gtkdoc2man(path, output_directory=None, prefix=None, section=3, book=None):
 
     # Inject xmlns:xi="" so that the XML parser can follow xinclude
     # paths. Pretty annoying that this isn't done by default.
-    idx = data.index('<book')
-    assert idx, 'Cannot find <book> in XML document.'
-    data = data[:idx + 5] + ' xmlns:xi="http://www.w3.org/2001/XInclude" ' + data[idx+5:]
+    if 'xmlns:xi' not in data:
+        idx = data.index('<book')
+        assert idx, 'Cannot find <book> in XML document.'
+        data = data[:idx + 5] + ' xmlns:xi="http://www.w3.org/2001/XInclude" ' + data[idx+5:]
     data = StringIO(data)
 
     # Generate the links to the generated manpage.
@@ -185,6 +186,8 @@ if __name__ == '__main__':
             assert section < 10
         elif o in ('-b', '--book'):
             book = a
+
+    assert prefix
 
     for path in args:
         if os.path.exists(path):
